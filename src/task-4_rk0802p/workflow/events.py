@@ -45,12 +45,30 @@ class EventLogger:
         revision_count: int = 0,
         payload: Optional[dict[str, Any]] = None,
         event_id: Optional[str] = None,
+        allow_duplicate: bool = False,
     ) -> WorkflowEvent:
-        """Record a structured workflow event and persist to log file if configured."""
+        """Record a structured workflow event and persist to log file if configured.
+
+        Guarantees idempotency: unless allow_duplicate is True, identical event types
+        at the same stage and revision count for the same run_id will not produce duplicate records.
+        """
+        et = EventType(event_type) if isinstance(event_type, str) else event_type
+
+        # Idempotency check for state transition events
+        if not allow_duplicate and et != EventType.DUPLICATE_APPROVAL_IGNORED:
+            for existing in self._events:
+                if (
+                    existing.run_id == run_id
+                    and existing.event_type == et
+                    and existing.stage == stage
+                    and existing.revision_count == revision_count
+                ):
+                    return existing
+
         kwargs: dict[str, Any] = {
             "run_id": run_id,
             "content_id": content_id,
-            "event_type": event_type,
+            "event_type": et,
             "stage": stage,
             "revision_count": revision_count,
             "payload": payload or {},
@@ -68,13 +86,22 @@ class EventLogger:
 
         return event
 
-    def has_event(self, run_id: str, event_type: EventType | str, stage: Optional[str] = None) -> bool:
+    def has_event(
+        self,
+        run_id: str,
+        event_type: EventType | str,
+        stage: Optional[str] = None,
+        revision_count: Optional[int] = None,
+    ) -> bool:
         """Check if an event matching criteria has already been recorded."""
         et = EventType(event_type) if isinstance(event_type, str) else event_type
         for e in self._events:
             if e.run_id == run_id and e.event_type == et:
-                if stage is None or e.stage == stage:
-                    return True
+                if stage is not None and e.stage != stage:
+                    continue
+                if revision_count is not None and e.revision_count != revision_count:
+                    continue
+                return True
         return False
 
     def get_events(self, run_id: Optional[str] = None) -> List[WorkflowEvent]:

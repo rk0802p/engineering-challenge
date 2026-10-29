@@ -1,8 +1,8 @@
 # Task 4 — Resumable Review Workflow
 
-**Candidate:** rk0802p  
-**Task:** Task 4 — Resumable Review Workflow  
-**Framework:** Python 3.11+ / LangGraph / Pydantic v2 / SQLite checkpointing  
+- **Candidate:** rk0802p
+- **Task:** Task 4 — Resumable Review Workflow
+- **Framework:** Python 3.11+ / LangGraph / Pydantic v2 / SQLite checkpointing
 
 ---
 

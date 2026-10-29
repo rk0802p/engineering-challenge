@@ -241,3 +241,111 @@ class TestDuplicateApprovalIdempotency:
             assert len(duplicate_events) == 1, "Expected DUPLICATE_APPROVAL_IGNORED event."
 
             saver.conn.close()
+
+    def test_cli_duplicate_approval_across_separate_processes(self, fixtures_dir):
+        """Verify CLI duplicate approval remains idempotent when executed across new OS processes."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = Path(tmpdir) / "cli_idempotent.db"
+            log_path = Path(tmpdir) / "cli_events.jsonl"
+            content_id = "content-001"
+            root_dir = Path(__file__).resolve().parent.parent
+
+            # Process 1: run command
+            proc1 = subprocess.run(
+                [
+                    sys.executable,
+                    "-m",
+                    "workflow.cli",
+                    "run",
+                    content_id,
+                    "--scenario",
+                    "normal_pass",
+                    "--db-path",
+                    str(db_path),
+                    "--log-file",
+                    str(log_path),
+                ],
+                cwd=root_dir,
+                capture_output=True,
+                text=True,
+            )
+            assert proc1.returncode == 0, f"CLI run failed: {proc1.stderr}"
+            assert "Workflow paused." in proc1.stdout
+
+            # Process 2: first approve command
+            proc2 = subprocess.run(
+                [
+                    sys.executable,
+                    "-m",
+                    "workflow.cli",
+                    "approve",
+                    content_id,
+                    "--db-path",
+                    str(db_path),
+                    "--log-file",
+                    str(log_path),
+                ],
+                cwd=root_dir,
+                capture_output=True,
+                text=True,
+            )
+            assert proc2.returncode == 0, f"CLI approve 1 failed: {proc2.stderr}"
+            assert "Workflow completed." in proc2.stdout
+
+            # Process 3: second approve command in a completely new OS process
+            proc3 = subprocess.run(
+                [
+                    sys.executable,
+                    "-m",
+                    "workflow.cli",
+                    "approve",
+                    content_id,
+                    "--db-path",
+                    str(db_path),
+                    "--log-file",
+                    str(log_path),
+                ],
+                cwd=root_dir,
+                capture_output=True,
+                text=True,
+            )
+            assert proc3.returncode == 0, f"CLI approve 2 failed: {proc3.stderr}"
+            assert "Duplicate approval ignored." in proc3.stdout
+
+            # Verify event log only has 1 completion event
+            logger = EventLogger(log_file=log_path)
+            events = logger.get_events(f"run_{content_id}")
+            completed_events = [e for e in events if e.event_type == EventType.WORKFLOW_COMPLETED]
+            duplicate_events = [e for e in events if e.event_type == EventType.DUPLICATE_APPROVAL_IGNORED]
+            assert len(completed_events) == 1
+            assert len(duplicate_events) == 1
+
+    def test_interruption_before_checkpoint_does_not_duplicate_audit_events(self):
+        """Verify that an interrupted step before checkpointing does not record duplicate events."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            log_path = Path(tmpdir) / "idempotent_event_log.jsonl"
+            logger = EventLogger(log_file=log_path)
+
+            # Record event once
+            logger.record_event(
+                run_id="run-interrupt-test",
+                content_id="content-001",
+                event_type=EventType.HUMAN_REVIEW_REQUIRED,
+                stage="human_review",
+                revision_count=1,
+                payload={"attempt": 1},
+            )
+            # Re-attempt event recording (simulating node rerun after interruption)
+            logger.record_event(
+                run_id="run-interrupt-test",
+                content_id="content-001",
+                event_type=EventType.HUMAN_REVIEW_REQUIRED,
+                stage="human_review",
+                revision_count=1,
+                payload={"attempt": 2},
+            )
+
+            # Reload from disk to verify disk file has exactly 1 event
+            logger2 = EventLogger(log_file=log_path)
+            events = logger2.get_events("run-interrupt-test")
+            assert len(events) == 1
