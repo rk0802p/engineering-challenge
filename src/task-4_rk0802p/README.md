@@ -84,7 +84,7 @@ Run the full test suite with verbose output:
 ## 5. Acceptance Criteria Checklist
 
 - [x] **Phase 1: Typed Workflow Contracts** — Pydantic models for content item, evaluator response, workflow state, and event records. Validation check passes for malformed content and unknown decisions.
-- [ ] **Phase 2: LangGraph Workflow** — Explicit nodes and conditional routing for evaluate, revise, human_review, and complete.
+- [x] **Phase 2: LangGraph Workflow** — Explicit nodes and conditional routing for evaluate, revise, human_review, and complete. Deterministic fixture sequences verify normal pass, one revision, and retry limit.
 - [ ] **Phase 3: Persistent Checkpoints** — SQLite-backed checkpointer with process restart resumption.
 - [ ] **Phase 4: CLI Interface** — `run`, `resume`, and `approve` commands.
 - [ ] **Phase 5: Bounded Revisions & Idempotency** — Strict 2-revision limit and safe duplicate approvals.
