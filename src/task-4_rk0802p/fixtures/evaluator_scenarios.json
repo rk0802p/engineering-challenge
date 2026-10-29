@@ -1,0 +1,44 @@
+{
+  "normal_pass": [
+    {
+      "decision": "human_review",
+      "feedback": "Content passes automated criteria. Ready for human review.",
+      "score": 0.95
+    }
+  ],
+  "one_revision_then_pass": [
+    {
+      "decision": "revise",
+      "feedback": "Tone too informal. Please refine terminology in Section 2.",
+      "score": 0.65
+    },
+    {
+      "decision": "human_review",
+      "feedback": "Tone issues resolved. Ready for human review.",
+      "score": 0.92
+    }
+  ],
+  "always_revise": [
+    {
+      "decision": "revise",
+      "feedback": "Revision 1 needed: Citation format incorrect.",
+      "score": 0.50
+    },
+    {
+      "decision": "revise",
+      "feedback": "Revision 2 needed: Statistical tables missing confidence intervals.",
+      "score": 0.55
+    },
+    {
+      "decision": "revise",
+      "feedback": "Revision 3 needed: Still non-compliant.",
+      "score": 0.52
+    }
+  ],
+  "invalid_decision": [
+    {
+      "decision": "publish_immediately",
+      "feedback": "Invalid decision not recognized by workflow contracts."
+    }
+  ]
+}

@@ -1,0 +1,29 @@
+{
+  "content-001": {
+    "content_id": "content-001",
+    "title": "Quarterly Technical Report Q3",
+    "body": "This report details architectural improvements made to the core pipeline, with thorough benchmark metrics.",
+    "metadata": {
+      "author": "Engineering Team",
+      "category": "technical_report"
+    }
+  },
+  "content-002": {
+    "content_id": "content-002",
+    "title": "Draft Product Announcement",
+    "body": "Initial draft of product release announcement needing grammar and formatting revisions.",
+    "metadata": {
+      "author": "Marketing",
+      "category": "announcement"
+    }
+  },
+  "content-malformed-missing-id": {
+    "title": "Missing Content ID",
+    "body": "This item has no content_id."
+  },
+  "content-malformed-empty-body": {
+    "content_id": "content-bad",
+    "title": "Empty Body",
+    "body": "   "
+  }
+}
